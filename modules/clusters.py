@@ -18,7 +18,7 @@ load_dotenv()
 
 OUT_DIR:           str = str(os.getenv('OUT_DIR'))
 CERT_DIR:          str = str(os.getenv('CERT_DIR'))
-MEM_PER_NODE:      int = str(os.getenv('MEM_PER_NODE')) + 'GB'
+MEM_PER_NODE:      str = str(os.getenv('MEM_PER_NODE')) + 'GB'
 NET_INTERFACE:     str = str(os.getenv('NET_INTERFACE'))
 ACCOUNT:           str = str(os.getenv('ACCOUNT'))
 PARTITION:         str = str(os.getenv('PARTITION'))
@@ -100,16 +100,45 @@ def get_slurm_cluster(
     return cluster
 
 
-def get_kube_cluster() -> KubeCluster:
+def get_kube_cluster(
+        ncores:       int,
+        mem_per_node: str = MEM_PER_NODE,
+        ns:           str = KUBE_NAMESPACE,
+    ) -> KubeCluster:
     """
-    Create a dask_kubernetes.operator.KubeCluster object able to interact with the Kubernetes
+    Create a dask_kubernetes.operator.KubeCluster object able to interact with  a
+    Kubernetes cluster installation. The cluster will spawn a pod which acts as a
+    scheduler and one or more pods which act as workers. Default values are taken
+    from the environment variables.
+    The scaling is done with the dask_kubernetes.operator.KubeCluster.scale method
+    in the benchmark loop.
 
+    :param ncores:       Number of cores each worker will have
+    :param mem_per_node: Amount of memory each worker will have
+    :param ns:           Namespace where to deploy the cluster
     :return: A dask_kubernetes.operator.KubeCluster object
     """
     cluster: KubeCluster = KubeCluster(
-        namespace=KUBE_NAMESPACE,
-        custom_cluster_spec=KUBE_CLUSTER_SPEC,
+        namespace=ns,
         n_workers=0,
-        quiet=True
+        #image="",
+
+        # This resources definition are for the "default" worker group
+        # It's possible to add other worker groups with different resources with
+        #       KubeCluster.add_worker(...)
+        resources= {
+            'requests': {
+                    'cpu': ncores,
+                    'memory': mem_per_node,
+                },
+            'limits': {
+                    'cpu': ncores,
+                    'memory': mem_per_node,
+                },
+            },
+
+        #worker_command="",  # Command to run on the worker pod
+
+        quiet=False
     )
     return cluster

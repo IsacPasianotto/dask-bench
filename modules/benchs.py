@@ -86,7 +86,7 @@ def slurm_benchmark(
     results: list = []
 
     for ncpus in range(0, max_n_cores+1, step_by):
-        
+
         # In any case we want the serial case with 1 core
         ncpus = ncpus if ncpus > 0 else 1
 
@@ -156,12 +156,19 @@ def kube_benchmark(
 
     for ncpus in range(1, max_n_cores+1, step_by):
 
+        # In any case we want the serial case with 1 core
+        ncpus = ncpus if ncpus > 0 else 1
+
+        # check how many nodes are needed
+        node_needed:        int = ((ncpus - 1) // CORES_PER_NODE) +  1
+        core_per_pod:  int = ncpus // node_needed
+
         client = None
         cluster = None
 
         try:
-            cluster = cluster_getter()
-            cluster.scale(n=ncpus, worker_group = 'default')  # will use the one defined in the yaml file
+            cluster = cluster_getter(core_per_pod)
+            cluster.scale(n=node_needed, worker_group = 'default')  # will use the one defined in the yaml file
             client = Client(cluster)
 
             if verbose:
