@@ -18,7 +18,7 @@ load_dotenv()
 
 OUT_DIR:           str = str(os.getenv('OUT_DIR'))
 CERT_DIR:          str = str(os.getenv('CERT_DIR'))
-MEM_PER_NODE:      int = int(str(os.getenv('MEM_PER_NODE')))
+MEM_PER_NODE:      int = str(os.getenv('MEM_PER_NODE')) + 'GB'
 NET_INTERFACE:     str = str(os.getenv('NET_INTERFACE'))
 ACCOUNT:           str = str(os.getenv('ACCOUNT'))
 PARTITION:         str = str(os.getenv('PARTITION'))
@@ -34,7 +34,7 @@ KUBE_CLUSTER_SPEC:  str = str(os.getenv('PWD')) + "/" + str(os.getenv('KUBE_CLUS
 
 def get_slurm_cluster(
         ncores:          int,
-        mem_per_node:    int = MEM_PER_NODE,
+        mem_per_node:    str = MEM_PER_NODE,
         interface:       str = NET_INTERFACE,
         env_to_source:   str = ENV_TO_SOURCE,
         out_dir:         str = OUT_DIR,
@@ -63,8 +63,8 @@ def get_slurm_cluster(
     cluster: SLURMCluster = SLURMCluster(
         cores                  = ncores,          # Total number of cores per job
         job_cpu                = ncores,          # Number of cpu to book in SLURM
-        memory                 = MEM_PER_NODE,    # Total amount of memory per job
-        job_mem                = MEM_PER_NODE,    # Amount of memory to request
+        memory                 = mem_per_node,    # Total amount of memory per job
+        job_mem                = mem_per_node,    # Amount of memory to request
         interface              = interface,       # use 'ip link show' to check
         processes              = 1,               # Cut the job up into this many processes. default ~= sqrt(cores)
         account                = account,
@@ -76,7 +76,7 @@ def get_slurm_cluster(
         security               = ssl,
         shared_temp_directory  = CERT_DIR,
         job_script_prologue = [
-            '#SBATCH --output=' + out_dir + 'slurm-%j.out',
+            '#SBATCH --output=' + out_dir + '/' + 'slurm-%j.out',
             '#SBATCH --job-name="d_slave"',
             '#SBATCH --get-user-env',
             '#SBATCH --cpus-per-task=' + str(ncores),

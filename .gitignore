@@ -1,4 +1,22 @@
+# After loaded a fac-simile, added to gitignore
+.env
+
+# Actual file used to subbit jobs
+sbatcher.sh
+
+# slurm outs
+*.out
+
+# All self-signed certificates generated for ssl
+certs/
+certs/*
+
 
 # JetBrains IDE
 .idea/
 .idea/*
+
+# Other
+
+*__pycache__/
+*__pycache__/*

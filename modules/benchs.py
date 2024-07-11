@@ -93,7 +93,7 @@ def slurm_benchmark(
 
         try:
 
-            cluster: SLURMCluster = cluster_getter(core_per_job_node, cores_per_node=CORES_PER_NODE)
+            cluster: SLURMCluster = cluster_getter(core_per_job_node)
             client:  Client = Client(cluster)
             cluster.scale(node_needed)
 
