@@ -11,6 +11,7 @@ import pandas as pd
 import modules.weakscaling as ws
 import modules.clusters as cls
 import modules.benchs as benchs
+from modules.datahandler import process_results as dh
 
 ####
 ##  Global constants
@@ -47,19 +48,13 @@ def main() -> None:
         for result in results_df:
             file.write(result)
 
-    # Aggregate and save the processed results.....
-    # TODO --> make a module to do that
-    results = results_array + results_df
-    df = pd.concat(results)
-    agg_funcs = ['median', 'mean', 'min', 'max']
-    res = df.groupby(['collection', 'name', 'n', 'unit']).agg(agg_funcs).reset_index()
-    # Flatten the multi-level columns
-    res.columns = ['_'.join(col).strip() if col[1] else col[0] for col in res.columns.values]
-    OUT_FILE = RES_FILE_NAME + '_aggregated.csv'
-    res.to_csv(OUT_FILE, index=False)
 
-    print(f'Results saved to {OUT_FILE}')
+    # Process the raw data and save the results
+    results_array: pd.DataFrame = dh(results_array)
+    results_df:    pd.DataFrame = dh(results_df)
 
+    results_array.to_csv(RES_FILE_NAME + '_arrays.csv', index=False)
+    results_df.to_csv(RES_FILE_NAME + '_dataframes.csv', index=False)
 
 ####
 ## Start the program
