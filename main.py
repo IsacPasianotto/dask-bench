@@ -3,9 +3,10 @@
 ####
 
 # Installed modules:
-from dotenv import load_dotenv
 import os
+import pickle
 import pandas as pd
+from dotenv import load_dotenv
 
 # Defined modules:
 import modules.weakscaling as ws
@@ -41,12 +42,10 @@ def main() -> None:
         results_df = benchs.slurm_benchmark(setoftasks=ws.assess_dataframes, cluster_getter=cls.get_slurm_cluster)
 
     # Save the raw results for possible future analysis
-    with open(RES_FILE_NAME + '_arrays_raw.csv', 'w') as file:
-        for result in results_array:
-            file.write(result)
-    with open(RES_FILE_NAME + '_dataframes_raw.csv', 'w') as file:
-        for result in results_df:
-            file.write(result)
+    with open(RES_FILE_NAME + '_arrays_raw', 'wb') as file:
+        pickle.dump(results_array, file)
+    with open(RES_FILE_NAME + '_dataframes_raw', 'wb') as file:
+        pickle.dump(results_df, file)
 
 
     # Process the raw data and save the results
@@ -55,6 +54,11 @@ def main() -> None:
 
     results_array.to_csv(RES_FILE_NAME + '_arrays.csv', index=False)
     results_df.to_csv(RES_FILE_NAME + '_dataframes.csv', index=False)
+
+    print("==========================", flush=True)    
+    print("== Benchmark completed  ==", flush=True)    
+    print("==========================", flush=True)    
+
 
 ####
 ## Start the program
