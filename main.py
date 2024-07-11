@@ -2,79 +2,67 @@
 ##  Imports
 ####
 
-# installed packages
+# Installed modules:
+from dotenv import load_dotenv
 import os
 import pandas as pd
-from dotenv import load_dotenv
 
-# defined packages
-from modules.benchmarks.slurm import benchmark_slurm as bs
-from modules.weakscaling.arrays import array_tasks_provider as atp
-from modules.weakscaling.dfs import dfs_tasks_provider as dtp
+# Defined modules:
+import modules.weakscaling as ws
+import modules.clusters as cls
+import modules.benchs as benchs
 
 ####
-##  global variablesextstep=2)
-
+##  Global constants
 ####
 
 load_dotenv()
 
-KUBE:       bool = True if str(os.getenv('KUBE')).lower() == 'true' else False
-F_OUT_NAME: str = str(os.getenv('RES_DIR')) + '/' + str(os.getenv('RES_FILE_NAME'))
+KUBE:            bool= True if str(os.getenv('KUBE')).lower() == 'true' else False
+RES_DIR:         str = str(os.getenv('RES_DIR'))
+RES_FILE_NAME:   str = str(os.getenv('RES_DIR')) + '/' + str(os.getenv('RES_FILE_NAME'))
 
 ####
 ## Main function
 ####
 
+
+
 def main() -> None:
-
-    # 0. Perform the weak scaling benchmark
-
     results_array: list = []
     results_df:    list = []
 
     if KUBE:
-        print("NOT IMPLEMENTED YET")
-        pass
+        results_array = benchs.kube_benchmark(setoftasks=ws.assess_arrays, cluster_getter=cls.get_kube_cluster)
+        results_df = benchs.kube_benchmark(setoftasks=ws.assess_dataframes, cluster_getter=cls.get_kube_cluster)
     else:
-        results_array = bs(atp, stepby=2)
-        results_df    = bs(dtp, stepby=2)
+        results_array = benchs.slurm_benchmark(setoftasks=ws.assess_arrays, cluster_getter=cls.get_slurm_cluster)
+        results_df = benchs.slurm_benchmark(setoftasks=ws.assess_dataframes, cluster_getter=cls.get_slurm_cluster)
 
-    # 1. Save the obtained data
+    # Save the raw results for possible future analysis
+    with open(RES_FILE_NAME + '_arrays_raw.csv', 'w') as file:
+        for result in results_array:
+            file.write(result)
+    with open(RES_FILE_NAME + '_dataframes_raw.csv', 'w') as file:
+        for result in results_df:
+            file.write(result)
 
-    f: str = F_OUT_NAME + '_array_raw.csv'
-    with open(f, 'w') as file:
-        file.write(str(results_array))
-        file.close()
-    f: str = F_OUT_NAME + '_df_raw.csv'
-    with open(f, 'w') as file:
-        file.write(str(results_df))
-        file.close()
+    # Aggregate and save the processed results.....
+    # TODO --> make a module to do that
+    results = results_array + results_df
+    df = pd.concat(results)
+    agg_funcs = ['median', 'mean', 'min', 'max']
+    res = df.groupby(['collection', 'name', 'n', 'unit']).agg(agg_funcs).reset_index()
+    # Flatten the multi-level columns
+    res.columns = ['_'.join(col).strip() if col[1] else col[0] for col in res.columns.values]
+    OUT_FILE = RES_FILE_NAME + '_aggregated.csv'
+    res.to_csv(OUT_FILE, index=False)
 
-    # 2. Process the data
+    print(f'Results saved to {OUT_FILE}')
 
-    agg_fun: list = ['mean', 'std', 'min', 'max', 'median']
-
-    array_pd: pd.DataFrame = pd.concat(results_array)
-    df_pd:    pd.DataFrame = pd.concat(results_df)
-
-    array_res: pd.DataFrame = array_pd.groupby(['name', 'n', 'unit']).agg(agg_fun).reset_index()
-    df_res:    pd.DataFrame = df_pd.groupby(['name', 'n', 'unit']).agg(agg_fun).reset_index()
-
-    #flatten multi-level columns name
-    array_res.columns = ['_'.join(col).strip() for col in array_res.columns.values]
-    df_res.columns = ['_'.join(col).strip() for col in df_res.columns.values]
-
-    # 3. Save the processed data
-
-    array_res.to_csv(F_OUT_NAME + '_array.csv', index=False)
-    df_res.to_csv(F_OUT_NAME + '_df.csv', index=False)
-
-    print('Benchmark completed successfully!')
-    return None
 
 ####
-##  Run the main function
+## Start the program
 ####
 
 if __name__ == '__main__':
