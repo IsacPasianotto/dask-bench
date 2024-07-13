@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OUT_DIR:           str = str(os.getenv('OUT_DIR'))
+USE_SSL:           bool = True if str(os.getenv('USE_SSL')).lower() == 'true' else False
 CERT_DIR:          str = str(os.getenv('CERT_DIR'))
 MEM_PER_NODE:      str = str(os.getenv('MEM_PER_NODE')) + 'GB'
 NET_INTERFACE:     str = str(os.getenv('NET_INTERFACE'))
@@ -41,7 +42,7 @@ def get_slurm_cluster(
         queue:           str = PARTITION,
         timelimit:       str = TIME_LIMIT,
         account:         str = ACCOUNT,
-        ssl:             bool = True,
+        ssl:             bool = USE_SSL,
         cert_dir:        str = CERT_DIR,
     ) -> SLURMCluster:
     """
