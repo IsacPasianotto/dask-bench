@@ -67,7 +67,6 @@ def get_slurm_cluster(
         memory                 = mem_per_node,    # Total amount of memory per job
         job_mem                = mem_per_node,    # Amount of memory to request
         interface              = interface,       # use 'ip link show' to check
-        processes              = ncores,          # Cut the job up into this many processes. default ~= sqrt(cores)
         account                = account,
         queue                  = queue,
         walltime               = timelimit,
