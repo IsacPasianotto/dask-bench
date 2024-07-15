@@ -98,7 +98,7 @@ def slurm_benchmark(
 
             cluster: SLURMCluster = cluster_getter(core_per_job_node)
             client:  Client = Client(cluster)
-            cluster.scale(node_needed)
+            cluster.scale(jobs = node_needed)
 
             if verbose:
                 print(f'Scaling to {ncpus} cores...', flush=True)

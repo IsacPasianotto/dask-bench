@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OUT_DIR:           str = str(os.getenv('OUT_DIR'))
-USE_SSL:           bool = True if str(os.getenv('USE_SSL')).lower() == 'true' else False
-CERT_DIR:          str = str(os.getenv('CERT_DIR'))
+USE_SSL:           bool = True if str(os.getenv('USE_SSL')).lower() == 'true' else None
+CERT_DIR:          str = str(os.getenv('CERT_DIR')) if USE_SSL else None
 MEM_PER_NODE:      str = str(os.getenv('MEM_PER_NODE')) + 'GB'
 NET_INTERFACE:     str = str(os.getenv('NET_INTERFACE'))
 ACCOUNT:           str = str(os.getenv('ACCOUNT'))
@@ -67,7 +67,7 @@ def get_slurm_cluster(
         memory                 = mem_per_node,    # Total amount of memory per job
         job_mem                = mem_per_node,    # Amount of memory to request
         interface              = interface,       # use 'ip link show' to check
-        processes              = 1,               # Cut the job up into this many processes. default ~= sqrt(cores)
+        processes              = ncores,          # Cut the job up into this many processes. default ~= sqrt(cores)
         account                = account,
         queue                  = queue,
         walltime               = timelimit,
