@@ -27,4 +27,11 @@ python --version
 which python3
 echo "---------------------------------"
 
+# To avoid the "Too many files open" on SLURMCluster
+# See:
+# 	https://stackoverflow.com/questions/18280612/ioerror-errno-24-too-many-open-files
+# 	https://stackoverflow.com/questions/60062942/dask-too-many-open-files-sockets
+# 	https://dask.discourse.group/t/too-many-open-files-on-slurmcluster/54
+ulimit -n 50000
+
 python3 main.py
