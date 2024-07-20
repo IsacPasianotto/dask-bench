@@ -16,6 +16,10 @@ certs/*
 .idea/
 .idea/*
 
+# Jupyter notebooks:
+.ipynb_checkpoints/
+.ipynb_checkpoints/*
+
 # Other
 
 *__pycache__/

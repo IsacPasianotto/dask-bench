@@ -1,0 +1,8 @@
+daskdask==2024.7.0
+dask-ml==2024.4.4
+dask-jobqueue==0.8.5
+dask-kubernetes==2024.5.0
+lz4==4.3.3
+tornado==6.4.1
+distributed==2022.7.0
+python-dotenv==1.0.1

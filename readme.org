@@ -1,4 +1,56 @@
-#+title: DASK Weak scaling
+#+title: DASK Weak scaling evaluation
+#+author: Isac Pasianotto
 
 
-*TODO* Write this readme 
+This repository contains code designed to evaluate the weak scaling performance of the [[https://www.dask.org][Dask]] distributed computing library.
+The primary purpose of this project is to provide a means to compare the performance of a Dask cluster's installation and find out how different configurations affect the scalability of the system.
+
+The scalability is expressed in terms of [[https://hpc-wiki.info/hpc/Scaling][weak scaling]], which measures the efficiency of a parallel algorithm when the problem size and the number of computational resources are increased proportionally.
+
+In particular the code in this repository was originally developed to compare the performance of a Dask cluster installed on a HPC cluster based on the [[https://slurm.schedmd.com/overview.html][Slurm]] workload manager and the installation on the same hardware but using the [[https://kubernetes.io/][Kubernetes]] container orchestration system.
+However the code should be easily adaptable to other distributed computing environments, for more detail see the [[https://docs.dask.org/en/stable/deploying.html][Dask documentation]] related to deploying Dask on different environments.
+
+
+* Get stared
+
+All the code in this repository was tested using ~python 3.11.3~.
+
+To get started, just clone this repository, create a virtual environment and install the required dependencies:
+
+#+BEGIN_SRC sh
+git clone https://github.com/IsacPasianotto/dask-bench
+cd dask-bench
+python -m venv daskbenchenv
+source daskbenchenv/bin/activate
+pip install -r requirements.txt
+#+END_SRC
+
+And then /remember to adjust the/ [[.env][.env]] file to match your configuration.
+
+#+BEGIN_COMMENT
+*Remark* Slurm uses ~GB~ as the default unit for memory, while Kubernetes uses ~Gi~. Take it into account when setting the memory limits in the ~.env~ file.
+#+END_COMMENT
+
+
+** Get starded -  Kubernetes
+
+Despite being a very flexible tools, Dask is also very rigorous in ensuring that the scheduler, the worker and in the case of Kubernetes also the client have the same version of every package installed.
+
+Despite [[https://github.com/dask/dask-docker][official images]] are available, packages in them may not be always alligned with the installed version of Dask in the client.
+For this reason it's recommended to build the images locally (maybe pushing it also to a private registry) and then use it.
+
+To do so the provided [[Dockerfile][Dockerfile]] can be used.
+
+
+* Usage
+
+TBD  ...
+
+
+* Acknowledgements
+
+The code in this repo was heavily inspired by the [[https://github.com/mrocklin/][Matthew Rocklin]]'s [[https://matthewrocklin.com/blog/work/2017/07/03/scaling][blog post]] on this topic.
+
+* Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests to improve the functionality and performance of this project.
