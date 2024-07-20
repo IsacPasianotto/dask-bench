@@ -13,7 +13,7 @@ However the code should be easily adaptable to other distributed computing envir
 
 * Get stared
 
-All the code in this repository was tested using ~python 3.11.3~.
+All the code in this repository was tested using ~python 3.11.9~.
 
 To get started, just clone this repository, create a virtual environment and install the required dependencies:
 
@@ -27,9 +27,7 @@ pip install -r requirements.txt
 
 And then /remember to adjust the/ [[.env][.env]] file to match your configuration.
 
-#+BEGIN_COMMENT
 *Remark* Slurm uses ~GB~ as the default unit for memory, while Kubernetes uses ~Gi~. Take it into account when setting the memory limits in the ~.env~ file.
-#+END_COMMENT
 
 
 ** Get starded -  Kubernetes
@@ -39,8 +37,15 @@ Despite being a very flexible tools, Dask is also very rigorous in ensuring that
 Despite [[https://github.com/dask/dask-docker][official images]] are available, packages in them may not be always alligned with the installed version of Dask in the client.
 For this reason it's recommended to build the images locally (maybe pushing it also to a private registry) and then use it.
 
-To do so the provided [[Dockerfile][Dockerfile]] can be used.
+To do so the provided [[Dockerfile][Dockerfile]] can be used. It's recommended to build the image using the same nodes that will be used to run the benchmark, in order to let the compiler optimize the code for the specific architecture.
 
+#+BEGIN_SRC sh
+  source <path_to_virtualenv>/bin/activate
+  pip freeze > env.txt
+  podman build -t <container_image_name> .
+#+END_SRC
+
+It's also highly recommended to push the image to a (private) registry, to let the cluster just pull from it, otherwise the image must be present in every used node.
 
 * Usage
 

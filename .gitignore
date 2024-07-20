@@ -11,7 +11,6 @@ sbatcher.sh
 certs/
 certs/*
 
-
 # JetBrains IDE
 .idea/
 .idea/*
@@ -19,6 +18,9 @@ certs/*
 # Jupyter notebooks:
 .ipynb_checkpoints/
 .ipynb_checkpoints/*
+
+# output of pip freeze
+env.txt
 
 # Other
 
