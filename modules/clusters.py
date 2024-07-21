@@ -103,13 +103,15 @@ def get_slurm_cluster(
 
 def get_kube_cluster(
         ncores:         int,
-        mem_per_node:   str = MEM_PER_NODE,
-        ns:             str = KUBE_NAMESPACE,
-        clustername:    str = KUBECLUSTER_NAME,
-        containerimage: str = CONTAINER_IMAGE,
-        service_type:   str = 'ClusterIP',
-        worker_comm:    str = 'dask-worker',
-        quiet:          bool = True
+        mem_per_node:   str  = MEM_PER_NODE,
+        ns:             str  = KUBE_NAMESPACE,
+        clustername:    str  = KUBECLUSTER_NAME,
+        containerimage: str  = CONTAINER_IMAGE,
+        service_type:   str  = 'ClusterIP',
+        worker_comm:    str  = 'dask-worker',
+        quiet:          bool = True,
+        ssl:            bool = USE_SSL,
+        cert_dir:       str  = CERT_DIR
     ) -> KubeCluster:
     """
     Create a dask_kubernetes.operator.KubeCluster object able to interact with  a
@@ -126,6 +128,8 @@ def get_kube_cluster(
     :param containerimage: Name of the container image to use
     :param service_type: Type of service to use
     :param worker_comm:  Command to use to start the worker
+    :param ssl:          If True, the cluster will use SSL to communicate
+    :param cert_dir:     Directory where to look for the certificates (they will be mounted as a volume in the workers pods)
     :param quiet:        If True, the cluster will not print dynamically changing logs of the kubernetes status. It can be enabled for debugging purposes.
     :return: A dask_kubernetes.operator.KubeCluster object
     """
@@ -146,7 +150,9 @@ def get_kube_cluster(
             },
         'image': containerimage,
         'scheduler_service_type': service_type,
-        'worker_command': worker_comm
+        'worker_command': worker_comm,
+        'use_ssl': ssl,
+        'cert_dir': cert_dir
     }
 
     cluster = KubeCluster(namespace = ns, custom_cluster_spec=cmcs(**config), quiet=quiet)

@@ -29,8 +29,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-USE_SSL:           bool = True if str(os.getenv('USE_SSL')).lower() == 'true' else None
-CERT_DIR:          str = str(os.getenv('CERT_DIR')) if USE_SSL else None
+USE_SSL:           bool = True if str(os.getenv('USE_SSL')).lower() == 'true' else False
+CERT_DIR:          str = str(os.getenv('CERT_DIR')) if USE_SSL else "./certs"
+SECRET_CERT_NAME:  str = str(os.getenv('SECRET_CERT_NAME'))
+
 MEM_PER_NODE:      str = str(os.getenv('MEM_PER_NODE'))
 NET_INTERFACE:     str = str(os.getenv('NET_INTERFACE'))
 
@@ -48,8 +50,10 @@ def custom_make_worker_spec(
         resources:      dict,
         image:          str  = CONTAINER_IMAGE,
         n_workers:      int  = 0,
-        worker_command: str ="dask-worker",
-        container_port: int = 8788,
+        worker_command: str  ="dask-worker",
+        container_port: int  = 8788,
+        use_ssl:        bool = USE_SSL,
+        cert_dir:       str  = CERT_DIR,
     ) -> dict:
     """
     Create a dictionary with the specifications of the workers to be spawned in the
@@ -63,6 +67,8 @@ def custom_make_worker_spec(
     :param image:          Container image to use for the workers
     :param n_workers:      Number of workers to spawn, default is 0 because the scaling is done with the KubeCluster.scale method
     :param container_port: Port to use for the dashboard
+    :param use_ssl:        If True, the worker will use SSL to communicate with the scheduler
+    :param cert_dir:       Directory where to look for the certificates
     :return:               A dictionary with the worker specifications
     """
 
@@ -75,7 +81,14 @@ def custom_make_worker_spec(
         str(container_port),
     ]
 
-    return {
+    if use_ssl:
+        args.extend([
+            "--tls-ca-file", f"{cert_dir}/tls.crt",
+            "--tls-cert", f"{cert_dir}/tls.crt",
+            "--tls-key", f"{cert_dir}/tls.key"
+        ])
+
+    spec: dict = {
         "replicas": n_workers,
         "spec": {
             "containers": [
@@ -96,6 +109,22 @@ def custom_make_worker_spec(
         },
     }
 
+    if use_ssl:
+        spec["spec"]["containers"][0]["volumeMounts"] = [{
+            "name": "tls-certs",
+            "mountPath": cert_dir,
+            "readOnly": True
+        }]
+        spec["spec"]["volumes"] = [{
+            "name": "tls-certs",
+            "secret": {
+                "secretName": SECRET_CERT_NAME
+            }
+        }]
+
+    return spec
+
+
 
 def custom_make_scheduler_spec(
         cluster_name:            str,
@@ -111,6 +140,8 @@ def custom_make_scheduler_spec(
         readiness_timeout:       int  = 300,
         liveness_delay:          int  = 15,
         liveness_period:         int  = 20,
+        use_ssl:                 bool = USE_SSL,
+        cert_dir:                str  = CERT_DIR
     ) -> dict:
     """
     Create a dictionary with the specifications of the scheduler to be spawned in the
@@ -133,14 +164,24 @@ def custom_make_scheduler_spec(
     :param readiness_timeout:       Timeout for the readiness probe
     :param liveness_delay:          Initial delay for the liveness probe
     :param liveness_period:         Period for the liveness probe
+    :param use_ssl:                 If True, the scheduler will use SSL to communicate with the workers
+    :param cert_dir:                Directory where to look for the certificates
     :return:                        A dictionary with the scheduler specifications
     """
 
     args = ["dask-scheduler", "--host", "0.0.0.0"]
+
     if jupyter:
         args.append("--jupyter")
 
-    return {
+    if use_ssl:
+        args.extend([
+            "--tls-ca-file", f"{cert_dir}/tls.crt",
+            "--tls-cert", f"{cert_dir}/tls.crt",
+            "--tls-key", f"{cert_dir}/tls.key"
+        ])
+
+    spec: dict = {
         "spec": {
             "containers": [
                 {
@@ -198,6 +239,23 @@ def custom_make_scheduler_spec(
         },
     }
 
+    if use_ssl:
+        spec["spec"]["containers"][0]["volumeMounts"] = [{
+            "name": "tls-certs",
+            "mountPath": cert_dir,
+            "readOnly": True
+        }]
+        spec["spec"]["volumes"] = [{
+            "name": "tls-certs",
+            "secret": {
+                "secretName": SECRET_CERT_NAME
+            }
+        }]
+
+    return spec
+
+
+
 
 
 def custom_make_cluster_spec(
@@ -211,8 +269,10 @@ def custom_make_cluster_spec(
         jupyter:                   bool = False,
         scheduler_cores:           int  = SCHEDULER_CORES,
         scheduler_mem:             str  = SCHEDULER_MEM,
+        use_ssl:                   bool = USE_SSL,
+        cert_dir:                  str  = CERT_DIR
 ):
-    """
+    """"
     Create a dictionary with the specifications of the cluster to be spawned in the
     Kubernetes cluster. The dictionary is compatible with the DaskCluster class.
 
@@ -230,6 +290,8 @@ def custom_make_cluster_spec(
     :param jupyter:                  Flag to enable the Jupyter dashboard
     :param scheduler_cores:          Number of cores to assign to the scheduler, default is taken from the environment variables
     :param scheduler_mem:            Amount of memory to assign to the scheduler, default is taken from the environment variables
+    :param use_ssl:                  If True, the scheduler will use SSL to communicate with the workers
+    :param cert_dir:                 Directory where to look for the certificates
     :return:                        A dictionary with the cluster specifications compliant to the DaskCluster class constructor
     """
 
@@ -245,7 +307,26 @@ def custom_make_cluster_spec(
             },
         }
 
-    return {
+    scheduler_spec = custom_make_scheduler_spec(
+        cluster_name=name,
+        resources=resources_scheduler,
+        image=image,
+        scheduler_service_type=scheduler_service_type,
+        jupyter=jupyter,
+        use_ssl=use_ssl,
+        cert_dir=cert_dir,
+    )
+
+    worker_spec = custom_make_worker_spec(
+        resources=resources,
+        image=image,
+        n_workers=n_workers,
+        worker_command=worker_command,
+        use_ssl=use_ssl,
+        cert_dir=cert_dir,
+    )
+
+    cluster_spec = {
         "apiVersion": "kubernetes.dask.org/v1",
         "kind": "DaskCluster",
         "metadata": {
@@ -254,19 +335,16 @@ def custom_make_cluster_spec(
         },
         "spec": {
             "idleTimeout": idle_timeout,
-            "worker": custom_make_worker_spec(
-                resources=resources,
-                worker_command=worker_command,
-                n_workers=n_workers,
-                image=image,
-            ),
-            "scheduler": custom_make_scheduler_spec(
-                cluster_name=name,
-                resources=resources_scheduler,
-                image=image,
-                scheduler_service_type=scheduler_service_type,
-                jupyter=jupyter,
-            ),
+            "worker": worker_spec,
+            "scheduler": scheduler_spec,
         },
     }
 
+    if use_ssl:
+        cluster_spec["spec"]["security"] = {
+            "tls_ca_file": f"{cert_dir}/tls.crt",
+            "tls_cert": f"{cert_dir}/tls.crt",
+            "tls_key": f"{cert_dir}/tls.key",
+        }
+
+    return cluster_spec
