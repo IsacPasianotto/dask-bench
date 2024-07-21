@@ -28,6 +28,9 @@ MAX_N_CORES:    int = int(str(os.getenv('MAX_N_CORES')))
 STEP_BY:        int = int(str(os.getenv('STEP_BY')))
 VERBOSE:        bool = True if str(os.getenv('VERBOSE')).lower() == 'true' else False
 
+USE_SSL:        bool = True if str(os.getenv('USE_SSL')).lower() == 'true' else False
+CERT_DIR:       str = str(os.getenv('CERT_DIR'))
+
 ####
 ## Function definition
 ####
@@ -128,6 +131,7 @@ def slurm_benchmark(
 
     return results
 
+from distributed.security import Security
 
 def kube_benchmark(
         setoftasks,
@@ -135,7 +139,9 @@ def kube_benchmark(
         max_n_cores:     int = MAX_N_CORES,
         step_by:         int = STEP_BY,
         obs_per_iter:    int = OBS_PER_ITER,
-        verbose:         bool = VERBOSE
+        verbose:         bool = VERBOSE,
+        use_ssl:         bool = USE_SSL,
+        cert_dir:        str = CERT_DIR
     ) -> list:
     """
     Perform a benchmark on a Kubernetes cluster. The code initially will start filling an entire node.
@@ -149,13 +155,14 @@ def kube_benchmark(
     :param step_by:         increment of the number of cores at each iteration
     :param obs_per_iter:    number of observations to perform at each iteration
     :param verbose:         print information about the process
+    :param use_ssl:         use SSL for the connection
+    :param cert_dir:        directory where the certificates are stored
     :return:                a list of results
     """
 
     results: list = []
 
     for ncpus in range(1, max_n_cores+1, step_by):
-
         # In any case we want the serial case with 1 core
         ncpus = ncpus if ncpus > 0 else 1
 
@@ -169,7 +176,16 @@ def kube_benchmark(
         try:
             cluster = cluster_getter(core_per_pod)
             cluster.scale(n=node_needed, worker_group = 'default')  # will use the one defined in the yaml file
-            client = Client(cluster)
+
+            if use_ssl:
+                sec = Security(
+                    tls_ca_file = f'{cert_dir}/tls.crt',
+                    tls_client_cert = f'{cert_dir}/tls.crt',
+                    tls_client_key = f'{cert_dir}/tls.key',
+                    require_encryption = True)
+                client = Client(cluster, sec)
+            else:
+                client = Client(cluster)
 
             if verbose:
                 print(f'Cluster created!')
