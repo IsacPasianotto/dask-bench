@@ -162,7 +162,7 @@ def kube_benchmark(
 
     results: list = []
 
-    for ncpus in range(1, max_n_cores+1, step_by):
+    for ncpus in range(0, max_n_cores+1, step_by):
         # In any case we want the serial case with 1 core
         ncpus = ncpus if ncpus > 0 else 1
 
