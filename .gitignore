@@ -22,7 +22,12 @@ certs/*
 # output of pip freeze
 env.txt
 
+# results obtained
+results/
+results/*
+
 # Other
 
 *__pycache__/
 *__pycache__/*
+

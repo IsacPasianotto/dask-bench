@@ -150,6 +150,5 @@ def get_kube_cluster(
         'scheduler_service_type': service_type,
         'worker_command': worker_comm,
     }
-
     cluster = KubeCluster(namespace = ns, custom_cluster_spec=cmcs(**config), quiet=False)
     return cluster

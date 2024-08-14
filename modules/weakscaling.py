@@ -119,10 +119,6 @@ def assess_arrays(
     y = y.persist()
     wait(y)
 
-    # Free up all memory used by the client
-    x = None
-    y = None
-
 def assess_dataframes(
         n: int
     ) -> Generator:
@@ -168,12 +164,3 @@ def assess_dataframes(
     yield 'order data', 'MB', x.nbytes / 1e6
     wait(df.sort_values('col_1').persist())
 
-    # Error: to many files open!
-    # yield 'join data', 'MB', x.nbytes / 1e6
-    # m = df.merge(df2, on='col_1').persist()
-    # wait(m)
-
-    # Free up all memory used by the client
-    df = None
-    df2 = None
-    # m = None
