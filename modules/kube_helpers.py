@@ -10,7 +10,7 @@
 #         https://kubernetes.dask.org/en/stable/_modules/dask_kubernetes/operator/kubecluster/kubecluster.html#make_worker_spec
 #
 # The main changes are due to the fact, from hardware constrains (the benchmark was performed on a small cluster),
-# we need to assign different resources to the workers and the scheduler. 
+# we need to assign different resources to the workers and the scheduler.
 ####
 
 
@@ -46,7 +46,7 @@ def custom_make_worker_spec(
         resources:      dict,
         image:          str  = CONTAINER_IMAGE,
         n_workers:      int  = 0,
-        worker_command: str  ="dask-worker",
+        worker_command: str  ="ulimit -n 50000 && dask-worker",
         container_port: int  = 8788,
     ) -> dict:
     """
@@ -71,6 +71,8 @@ def custom_make_worker_spec(
         "--dashboard",
         "--dashboard-address",
         str(container_port),
+        "--nthreads",
+        resources['limits']['cpu']
     ]
 
     spec: dict = {
@@ -137,7 +139,7 @@ def custom_make_scheduler_spec(
     :return:                        A dictionary with the scheduler specifications
     """
 
-    args = ["dask-scheduler", "--host", "0.0.0.0"]
+    args = ["-c", "ulimit -n 50000 && dask-scheduler --host 0.0.0.0"]
 
     if jupyter:
         args.append("--jupyter")
@@ -148,6 +150,7 @@ def custom_make_scheduler_spec(
                 {
                     "name": "scheduler",
                     "image": image,
+                    "command": ["/bin/bash"],
                     "args": args,
                     "resources": resources,
                     "ports": [
